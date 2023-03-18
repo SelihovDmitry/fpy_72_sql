@@ -20,11 +20,13 @@ GROUP BY a.title
 
 -- 4 все исполнители, которые не выпустили альбомы в 2020 году;
 
-SELECT ar.title FROM artist ar
-LEFT JOIN artist_album aa ON aa.artist_id = ar.id 
-LEFT JOIN album al ON al.id = aa.album_id 
-WHERE al.release_year != 2020
-GROUP BY ar.title
+SELECT a.title FROM artist a  /* Получаем имена исполнителей */
+WHERE a.title  NOT IN (
+	SELECT a2.title  FROM artist a2 
+	JOIN artist_album aa ON a2.id = aa.artist_id 
+	JOIN album al ON aa.album_id = al.id  
+	WHERE al.release_year = 2020
+	)
 
 -- 5 названия сборников, в которых присутствует конкретный исполнитель (выберите сами);
 
@@ -46,6 +48,15 @@ SELECT title FROM (
 	GROUP BY al.title, ag.artist_id ) AS t1
 WHERE t1.cnt > 1
 
+-- без вложенного запроса
+
+SELECT al.title, count(ag.genre_id)  FROM album al 
+JOIN artist_album aa ON al.id =aa.album_id 
+JOIN artist ar ON aa.artist_id = ar.id
+JOIN artist_genre ag ON ar.id = ag.artist_id 
+GROUP BY al.title 
+HAVING count(ag.genre_id) > 1
+
 -- 7 наименование треков, которые не входят в сборники;
 
 SELECT t.title FROM track t 
@@ -61,11 +72,15 @@ JOIN track t ON al.id = t.album_id
 WHERE t.duration = (SELECT min(duration) FROM track)
 
 -- 9 название альбомов, содержащих наименьшее количество треков.
-
-SELECT album, cnt FROM (
-	SELECT a.title album, count(t.title) cnt FROM album a
-	LEFT JOIN track t ON a.id = t.album_id 
-	GROUP BY a.title ) AS t1
-WHERE cnt = (SELECT min(cnt) FROM (
-				SELECT count(album_id) cnt FROM track t 
-				GROUP BY album_id ) AS t2)
+				
+SELECT al.title FROM album al
+JOIN track t ON al.id = t.album_id
+GROUP BY al.title 
+HAVING count(t.title) = (
+	SELECT count(a.title) cnt FROM album a
+	JOIN track t2 ON a.id = t2.album_id
+	GROUP BY a.title 
+	ORDER BY cnt
+	LIMIT 1
+		)
+				
