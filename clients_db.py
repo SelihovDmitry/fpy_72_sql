@@ -120,15 +120,87 @@ def delete_client(conn, client_id):
         """)
         print('Таблица clients после удаления:', cur.fetchall())
 
+def find_client(conn, first_name=None, sur_name=None, email=None, phone=None):
+    # Функция, позволяющая найти клиента по его данным: имени, фамилии, email или телефону.
+    if first_name is not None:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT * FROM clients WHERE first_name like %s
+            """, ('%'+first_name+'%', ))
+            res = cur.fetchall()
+            if len(res) > 0:
+                print(f'Результат поиска клиента с именем {first_name}:', res)
+                current_id = res[0][0]
+                cur.execute("""
+                    SELECT phone_number FROM phones WHERE client_id = %s
+                """, (current_id, ))
+                print('Его телефоны:', cur.fetchall())
+            else:
+                print(f'Нет такого клиента ({first_name})')
+
+    if sur_name is not None:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT * FROM clients WHERE sur_name like %s
+            """, ('%'+sur_name+'%', ))
+            res = cur.fetchall()
+            if len(res) > 0:
+                print(f'Результат поиска клиента с Фамилией {sur_name}:', res)
+                current_id = res[0][0]
+                cur.execute("""
+                    SELECT phone_number FROM phones WHERE client_id = %s
+                """, (current_id, ))
+                print('Его телефоны:', cur.fetchall())
+            else:
+                print(f'Нет такого клиента ({sur_name})')
+
+    if email is not None:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT * FROM clients WHERE email like %s
+            """, (email, ) )
+            res = cur.fetchall()
+            if len(res) > 0:
+                print(f'Результат поиска клиента с почтой {email}:', res)
+                current_id = res[0][0]
+                cur.execute("""
+                    SELECT phone_number FROM phones WHERE client_id = %s
+                """, (current_id, ))
+                print('Его телефоны:', cur.fetchall())
+            else:
+                print(f'Нет такого клиента ({email})')
+
+    if phone is not None:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT * FROM phones WHERE phone_number like %s
+            """, ('%'+phone+'%', ) )
+            res = cur.fetchall()
+            # print('phone!!!!', res[0][1])
+            if len(res) > 0:
+                cur.execute("""
+                    SELECT * FROM clients WHERE id = %s
+                """, (res[0][1],))
+                print(f'Телефон {phone} принадлежит клиенту', cur.fetchall())
+            else:
+                print(f'Нет клиента с номером телефона ({phone})')
+
+
 with psycopg2.connect(database='clients_db', user='postgres', password=pass_db) as conn:
     create_db(conn)
     add_client(conn, 'Dmitrii', 'Selikhov', 'mail1@mail.ru', ['79261234567', '79035001122'])
     add_client(conn, 'Ivan', 'Matveev', 'Ivan1@mail.ru', ['79267774567'])
     add_client(conn, 'Lebron', 'James', 'Lebron@gmail.com', ['71012121234567'])
-    add_phone(conn, 2, ['+79825002030'])
+    add_phone(conn, 2, ['79825002030'])
     change_client(conn, 2, first_name='Sergey')
     delete_phone(conn, '9035001122')
     delete_client(conn, 1)
+    find_client(conn, first_name='Sergey')
+    find_client(conn, first_name='Vasya')
+    find_client(conn, sur_name='Matveev')
+    find_client(conn, email='Lebron@gmail.com')
+    find_client(conn, phone='9825002030')
+    find_client(conn, phone='9825002031')
 conn.close()
 
 print('Finish')
